@@ -24,13 +24,13 @@ public class Fila<T> {
     }
 
     public void enqueue(T valor) {
-        No<T> novo = new No<>(valor);
+        No<T> novo = new No<T>(valor);
         if (estaVazia()) {
             head = novo;
             tail = novo;
         } else {
-            novo.proximo = head;
-            head = novo;
+            tail.proximo = novo;
+            tail = novo;
         }
         tamanho++;
     }

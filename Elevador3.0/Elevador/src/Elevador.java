@@ -36,10 +36,15 @@ public class Elevador extends EntidadeSimulavel {
     }
 
     public void embarcarPessoasNoAndarAtual(Andar andar, int minutoAtual) {
+        if (andar == null) {
+            System.err.println("Erro: Andar é null");
+            return;
+        }
+        
         FilaPrior filaDePessoaAguardando = andar.getPessoasAguardando();
 
         // Se não há ninguém esperando ou elevador está cheio, retorna
-        if (filaDePessoaAguardando.tamanho() == 0 || !temEspaco()) {
+        if (filaDePessoaAguardando == null || filaDePessoaAguardando.tamanho() == 0 || !temEspaco()) {
             System.out.printf("DEBUG: Elevador %d não pode embarcar - Fila vazia ou cheio\n", id);
             return;
         }
@@ -253,58 +258,80 @@ public class Elevador extends EntidadeSimulavel {
     }
 
     public void desembarcarNoAndar(int andarAtual, int minutoSimulado) {
-        int tamanhoInicial = pessoasDentro.tamanho();
-        if (tamanhoInicial == 0) return;
+        try {
+            int tamanhoInicial = pessoasDentro.tamanho();
+            if (tamanhoInicial == 0) return;
 
-        Fila<Pessoa> pessoasRestantes = new Fila<>();
-        boolean alguemDesembarcou = false;
-        int pessoasDesembarcadas = 0;
-        int tempoTotalViagem = 0;
+            Fila<Pessoa> pessoasRestantes = new Fila<>();
+            boolean alguemDesembarcou = false;
+            int pessoasDesembarcadas = 0;
+            int tempoTotalViagem = 0;
 
-        for (int i = 0; i < tamanhoInicial; i++) {
-            Pessoa p = pessoasDentro.dequeue();
-            if (p.getAndarDestino() == andarAtual) {
-                p.sairElevador(minutoSimulado);
-                alguemDesembarcou = true;
-                pessoasDesembarcadas++;
-                tempoTotalViagem += p.getTempoViagem();
-                
-                // Atualiza contadores por tipo de horário
-                if (ehHorarioDePico(minutoSimulado)) {
-                    pessoasTransportadasHorarioPico++;
-                } else {
-                    pessoasTransportadasHorarioNormal++;
+            for (int i = 0; i < tamanhoInicial; i++) {
+                try {
+                    Pessoa p = pessoasDentro.dequeue();
+                    if (p != null && p.getAndarDestino() == andarAtual) {
+                        p.sairElevador(minutoSimulado);
+                        alguemDesembarcou = true;
+                        pessoasDesembarcadas++;
+                        tempoTotalViagem += p.getTempoViagem();
+                        
+                        // Atualiza contadores por tipo de horário
+                        if (ehHorarioDePico(minutoSimulado)) {
+                            pessoasTransportadasHorarioPico++;
+                        } else {
+                            pessoasTransportadasHorarioNormal++;
+                        }
+                        
+                        System.out.printf("🚶 Pessoa %d desembarcou no andar %d (Tempo de viagem: %d minutos)\n", 
+                            p.getId(), andarAtual, p.getTempoViagem());
+                    } else {
+                        if (p != null) {
+                            pessoasRestantes.enqueue(p);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erro ao processar pessoa no desembarque: " + e.getMessage());
                 }
-                
-                System.out.printf("🚶 Pessoa %d desembarcou no andar %d (Tempo de viagem: %d minutos)\n", 
-                    p.getId(), andarAtual, p.getTempoViagem());
-            } else {
-                pessoasRestantes.enqueue(p);
             }
-        }
 
-        // Atualiza a fila de pessoas dentro do elevador
-        pessoasDentro = pessoasRestantes;
+            // Atualiza a fila de pessoas dentro do elevador
+            pessoasDentro = pessoasRestantes;
 
-        if (alguemDesembarcou) {
-            totalPessoasTransportadas += pessoasDesembarcadas;
-            double tempoMedio = pessoasDesembarcadas > 0 ? (double)tempoTotalViagem / pessoasDesembarcadas : 0;
-            System.out.printf("\n📊 Elevador %d:\n", id);
-            System.out.printf("   👥 Total transportado: %d pessoas\n", totalPessoasTransportadas);
-            System.out.printf("   ⏱️ Tempo médio de viagem: %.1f minutos\n", tempoMedio);
-            System.out.printf("   ⏰ Horário de pico: %d pessoas\n", pessoasTransportadasHorarioPico);
-            System.out.printf("   ⏱️ Horário normal: %d pessoas\n\n", pessoasTransportadasHorarioNormal);
+            if (alguemDesembarcou) {
+                totalPessoasTransportadas += pessoasDesembarcadas;
+                double tempoMedio = pessoasDesembarcadas > 0 ? (double)tempoTotalViagem / pessoasDesembarcadas : 0;
+                System.out.printf("\n📊 Elevador %d:\n", id);
+                System.out.printf("   👥 Total transportado: %d pessoas\n", totalPessoasTransportadas);
+                System.out.printf("   ⏱️ Tempo médio de viagem: %.1f minutos\n", tempoMedio);
+                System.out.printf("   ⏰ Horário de pico: %d pessoas\n", pessoasTransportadasHorarioPico);
+                System.out.printf("   ⏱️ Horário normal: %d pessoas\n\n", pessoasTransportadasHorarioNormal);
+            }
+        } catch (Exception e) {
+            System.err.println("Erro crítico no desembarque do elevador " + id + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public void adicionarDestino(int andar) {
+        // Valida o andar
+        if (andar < 0 || andar > andarMaximo) {
+            System.err.printf("Erro: Andar %d inválido para elevador %d (máximo: %d)\n", andar, id, andarMaximo);
+            return;
+        }
+        
         // Evita destinos repetidos
         Ponteiro<Integer> p = destinos.getInicio();
         while (p != null) {
-            if (p.getElemento() == andar) return;
+            if (p.getElemento() == andar) {
+                System.out.printf("DEBUG: Andar %d já está na lista de destinos do elevador %d\n", andar, id);
+                return;
+            }
             p = p.getProximo();
         }
+        
         destinos.inserirFim(andar);
+        System.out.printf("DEBUG: Andar %d adicionado como destino do elevador %d\n", andar, id);
     }
 
     public int getAndarAtual() {
@@ -333,19 +360,24 @@ public class Elevador extends EntidadeSimulavel {
 
     @Override
     public void atualizar(int minutoSimulado) {
-        // Primeiro verifica se deve parar no andar atual
-        if (devePararNoAndarAtual()) {
-            // Primeiro desembarca TODAS as pessoas que precisam sair neste andar
-            desembarcarNoAndar(andarAtual, minutoSimulado);
-            
-            // Depois tenta embarcar pessoas
-            if (temEspaco()) {
-                processarEmbarque(minutoSimulado);
+        try {
+            // Primeiro verifica se deve parar no andar atual
+            if (devePararNoAndarAtual()) {
+                // Primeiro desembarca TODAS as pessoas que precisam sair neste andar
+                desembarcarNoAndar(andarAtual, minutoSimulado);
+                
+                // Depois tenta embarcar pessoas
+                if (temEspaco()) {
+                    processarEmbarque(minutoSimulado);
+                }
             }
+            
+            // Por fim, movimenta o elevador
+            movimentarElevadorInteligente();
+        } catch (Exception e) {
+            System.err.println("Erro crítico na atualização do elevador " + id + ": " + e.getMessage());
+            e.printStackTrace();
         }
-        
-        // Por fim, movimenta o elevador
-        movimentarElevadorInteligente();
     }
 
     private boolean ehHorarioDePico(int minutoSimulado) {

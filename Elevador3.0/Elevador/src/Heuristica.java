@@ -226,45 +226,60 @@ public class Heuristica {
     }
 
     public void distribuirChamadas() {
-        Lista<Andar> andares = predio.getAndares();
-        Ponteiro<Andar> atual = andares.getInicio();
-        
-        // Lista para controlar quais andares já foram atendidos
-        Lista<Integer> andaresAtendidos = new Lista<>();
-        
-        while (atual != null) {
-            Andar andar = atual.getElemento();
-            FilaPrior pessoasAguardando = andar.getPessoasAguardando();
+        try {
+            Lista<Andar> andares = predio.getAndares();
+            Ponteiro<Andar> atual = andares.getInicio();
             
-            // Verifica se o andar já foi atendido
-            boolean andarJaAtendido = false;
-            Ponteiro<Integer> pAndar = andaresAtendidos.getInicio();
-            while (pAndar != null) {
-                if (pAndar.getElemento() == andar.getNumero()) {
-                    andarJaAtendido = true;
-                    break;
-                }
-                pAndar = pAndar.getProximo();
-            }
+            // Lista para controlar quais andares já foram atendidos
+            Lista<Integer> andaresAtendidos = new Lista<>();
             
-            if (!andarJaAtendido && pessoasAguardando.tamanho() > 0) {
-                boolean temPrioridade = pessoasAguardando.temElementosNaPrioridade(2) || 
-                                      pessoasAguardando.temElementosNaPrioridade(1);
-                Elevador melhorElevador = encontrarElevadorMaisProximo(andar.getNumero(), temPrioridade);
-                
-                if (melhorElevador != null) {
-                    melhorElevador.adicionarDestino(andar.getNumero());
-                    andaresAtendidos.inserirFim(andar.getNumero());
-                    System.out.printf("📞 Chamada do andar %d atribuída ao elevador %d\n",
-                        andar.getNumero(), melhorElevador.getId());
-                } else {
-                    System.out.printf("⚠️ Nenhum elevador disponível para atender chamada do andar %d\n",
-                        andar.getNumero());
+            while (atual != null) {
+                try {
+                    Andar andar = atual.getElemento();
+                    if (andar == null) {
+                        System.err.println("Erro: Andar é null na distribuição de chamadas");
+                        atual = atual.getProximo();
+                        continue;
+                    }
+                    
+                    FilaPrior pessoasAguardando = andar.getPessoasAguardando();
+                    
+                    // Verifica se o andar já foi atendido
+                    boolean andarJaAtendido = false;
+                    Ponteiro<Integer> pAndar = andaresAtendidos.getInicio();
+                    while (pAndar != null) {
+                        if (pAndar.getElemento() == andar.getNumero()) {
+                            andarJaAtendido = true;
+                            break;
+                        }
+                        pAndar = pAndar.getProximo();
+                    }
+                    
+                    if (!andarJaAtendido && pessoasAguardando != null && pessoasAguardando.tamanho() > 0) {
+                        boolean temPrioridade = pessoasAguardando.temElementosNaPrioridade(2) || 
+                                              pessoasAguardando.temElementosNaPrioridade(1);
+                        Elevador melhorElevador = encontrarElevadorMaisProximo(andar.getNumero(), temPrioridade);
+                        
+                        if (melhorElevador != null) {
+                            melhorElevador.adicionarDestino(andar.getNumero());
+                            andaresAtendidos.inserirFim(andar.getNumero());
+                            System.out.printf("📞 Chamada do andar %d atribuída ao elevador %d\n",
+                                andar.getNumero(), melhorElevador.getId());
+                        } else {
+                            System.out.printf("⚠️ Nenhum elevador disponível para atender chamada do andar %d\n",
+                                andar.getNumero());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erro ao processar andar na distribuição de chamadas: " + e.getMessage());
                 }
+                atual = atual.getProximo();
             }
-            atual = atual.getProximo();
+            atualizarTotalTransportado();
+        } catch (Exception e) {
+            System.err.println("Erro crítico na distribuição de chamadas: " + e.getMessage());
+            e.printStackTrace();
         }
-        atualizarTotalTransportado();
     }
 
     public void distribuirElevadoresVazios() {

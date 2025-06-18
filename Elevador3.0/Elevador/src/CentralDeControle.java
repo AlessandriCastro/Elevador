@@ -17,13 +17,22 @@ public class CentralDeControle extends EntidadeSimulavel {
 
     @Override
     public void atualizar(int minutoSimulado) {
-        heuristica.distribuirChamadas();
-//       Atualiza os elevadores
-        Ponteiro<Elevador> p = elevadores.getInicio();
-        while (p != null) {
-            Elevador e = p.getElemento();
-            e.atualizar(minutoSimulado);
-            p = p.getProximo();
+        try {
+            heuristica.distribuirChamadas();
+            // Atualiza os elevadores
+            Ponteiro<Elevador> p = elevadores.getInicio();
+            while (p != null) {
+                try {
+                    Elevador e = p.getElemento();
+                    e.atualizar(minutoSimulado);
+                } catch (Exception e) {
+                    System.err.println("Erro ao atualizar elevador: " + e.getMessage());
+                }
+                p = p.getProximo();
+            }
+        } catch (Exception e) {
+            System.err.println("Erro crítico na atualização da central de controle: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

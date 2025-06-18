@@ -43,6 +43,10 @@ public class Simulador implements Serializable {
         return predio;
     }
 
+    public int getVelocidadeEmMs() {
+        return velocidadeEmMs;
+    }
+
     public void encerrar() {
         if (timer != null) timer.cancel();
         emExecucao = false;

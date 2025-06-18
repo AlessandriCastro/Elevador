@@ -123,13 +123,18 @@ public class Predio extends EntidadeSimulavel implements Serializable {
     
     @Override
     public void atualizar(int minutoSimulado) {
-        central.atualizar(minutoSimulado);
-        geradorPessoas.atualizar(minutoSimulado);
-        mostrarEstadoAtual(minutoSimulado);
-        
-        // Mostra estatísticas a cada hora
-        if (minutoSimulado % 60 == 0) {
-            geradorPessoas.mostrarEstatisticas();
+        try {
+            central.atualizar(minutoSimulado);
+            geradorPessoas.atualizar(minutoSimulado);
+            mostrarEstadoAtual(minutoSimulado);
+            
+            // Mostra estatísticas a cada hora
+            if (minutoSimulado % 60 == 0) {
+                geradorPessoas.mostrarEstatisticas();
+            }
+        } catch (Exception e) {
+            System.err.println("Erro crítico na atualização do prédio: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -1,10 +1,11 @@
+import javax.swing.SwingUtilities;
+
 public class Main {
     public static void main(String[] args) {
-        Simulador simulador = new Simulador(5, 2, 100);
-        Predio predio = simulador.getPredio();
-
-        simulador.iniciar();
-
+        SwingUtilities.invokeLater(() -> {
+            SimuladorGUI gui = new SimuladorGUI(12, 3, 1000); // 5 andares, 2 elevadores, 1 segundo por ciclo
+            gui.setVisible(true);
+        });
     }
 }
 
